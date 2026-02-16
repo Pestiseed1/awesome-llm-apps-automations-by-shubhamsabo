@@ -1,0 +1,31 @@
+{
+  "name": "Weekly Product Registry Sync",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "weeks" }] } },
+      "id": "Schedule",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.domain.com/api/products/sync",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{$env.BACKEND_SERVICE_TOKEN}}" }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{ { registryProducts: $json.products } }}"
+      },
+      "id": "SyncEndpoint",
+      "name": "Call Product Sync Endpoint",
+      "type": "n8n-nodes-base.httpRequest"
+    }
+  ],
+  "connections": {
+    "Weekly Trigger": { "main": [[{ "node": "Call Product Sync Endpoint", "type": "main", "index": 0 }]] }
+  }
+}

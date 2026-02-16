@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  Draft
+  PendingApproval
+  Approved
+  Rejected
+  Sent
+}
+
+model Customer {
+  id          String    @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoices    Invoice[]
+}
+
+model Product {
+  id                 String             @id @default(cuid())
+  name               String
+  registrationNumber String             @unique
+  activeIngredient   String
+  concentration      String
+  isActive           Boolean            @default(true)
+  lastSyncedAt       DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  changeLogs         ProductChangeLog[]
+}
+
+model ProductChangeLog {
+  id                 String   @id @default(cuid())
+  productId          String
+  fieldName          String
+  oldValue           String?
+  newValue           String?
+  changedAt          DateTime @default(now())
+  reason             String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id               String                   @id @default(cuid())
+  customerId       String
+  jobDate          DateTime
+  findings         String?
+  treatment        String?
+  recommendation   String?
+  warranty         String?
+  serviceCost      Decimal                  @db.Decimal(10,2)
+  hst              Decimal                  @db.Decimal(10,2)
+  total            Decimal                  @db.Decimal(10,2)
+  status           InvoiceStatus            @default(Draft)
+  slackMessageTs   String?
+  rejectionReason  String?
+  signaturePath    String?
+  signedAt         DateTime?
+  signedIpAddress  String?
+  pdfPath          String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  customer         Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  productSnapshots InvoiceProductSnapshot[]
+}
+
+model InvoiceProductSnapshot {
+  id                 String   @id @default(cuid())
+  invoiceId          String
+  productId          String
+  productName        String
+  registrationNumber String
+  activeIngredient   String
+  concentration      String
+  createdAt          DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
